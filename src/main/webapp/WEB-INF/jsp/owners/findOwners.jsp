@@ -4,6 +4,7 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="security" uri="http://www.springframework.org/security/tags" %>
 
 <html lang="en">
 
@@ -31,8 +32,10 @@
     </form:form>
 
     <br/>
-    <a href='<spring:url value="/owners/new" htmlEscape="true"/>'>Add Owner</a>
-
+   <security:authorize access="hasRole('ROLE_ADMIN')"> 
+    	<a href="<spring:url value="/owners/new" htmlEscape="true"/>">Add Owner</a>
+    </security:authorize>
+ 
     <jsp:include page="../fragments/footer.jsp"/>
 
 </div>
