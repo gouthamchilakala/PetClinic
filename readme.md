@@ -206,7 +206,7 @@ Here is a list of them:
 </table>
 
 
-# Contributing
+# Contributing.
 
 The [issue tracker](https://github.com/spring-projects/spring-petclinic/issues) is the preferred channel for bug reports, features requests and submitting pull requests.
 
