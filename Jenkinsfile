@@ -1,5 +1,5 @@
 node {
-    def mvnHome = tool name: 'Maven_3', type: 'maven'
+    def mvnHome = tool name: 'MAVEN3', type: 'maven'
     def mvnCli = "${mvnHome}/bin/mvn"
 
     properties([
@@ -32,13 +32,13 @@ node {
         junit allowEmptyResults: true, testResults: '**/surefire-reports/*.xml'
     }
     stage('Deploy To Tomcat'){
-        sshagent(['app-server']) {
-            sh 'scp -o StrictHostKeyChecking=no target/*.war ec2-user@ec2-52-70-39-48.compute-1.amazonaws.com:/opt/apache-tomcat-8.5.38/webapps/'
+        sshagent(['test']) {
+            sh 'scp -o StrictHostKeyChecking=no target/*.war ec2-user@ec2-3-83-166-58.compute-1.amazonaws.com:/opt/apache-tomcat-7.0.94/webapps/'
         }
     }
     stage('Smoke Test'){
         sleep 5
-        sh "curl ec2-52-70-39-48.compute-1.amazonaws.com:8080/petclinic"
+        sh "curl ec2-3-83-166-58.compute-1.amazonaws.com:8080/petclinic"
     }
 
 }
