@@ -1,0 +1,47 @@
+node{
+
+    def MvnHome = tool name: 'MAVEN3', type: 'maven'
+    def MvnCli = "${MvnHome}/bin/mvn"
+    
+    properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '30', numToKeepStr: '')), disableConcurrentBuilds(), disableResume(), [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/gkdevops/PetClinic.git/'], pipelineTriggers([githubPush()])])
+    
+    stage('Code Checkout'){
+        git credentialsId: 'github-creds', url: 'https://github.com/gkdevops/PetClinic.git'
+    }
+    
+    stage('Code Quality'){
+        sh "${MvnCli} compile"
+        sh "${MvnCli} sonar:sonar -Dsonar.projectKey=petclinic -Dsonar.host.url=http://ec2-54-82-182-81.compute-1.amazonaws.com:9000 -Dsonar.login=4da6f8b774233fa369dc06a2b34dc2fab3483b3c"
+    }
+    
+    stage("Junit Test"){
+        sh "${MvnCli} test"
+    }
+    
+    stage("Pacakge Code"){
+        sh "${MvnCli} package -Dmaven.test.skip=true"
+    }
+    
+    stage('Archive Artifactory'){
+            script {
+              def server = Artifactory.server 'artifactory'
+              def uploadSpec = """{
+                "files": [
+                  {
+                    "pattern": "target/*.war",
+                    "target": "libs-release-local/"
+                  }
+                ]
+              }"""
+              server.upload(uploadSpec)
+            }
+    }
+    
+    stage('Deploy to Server'){
+        ansiblePlaybook installation: 'ansible', playbook: '/opt/deploy.yml'
+    }
+    
+    stage('Smoke test'){
+        sh "curl -sSf http://ec2-54-242-248-169.compute-1.amazonaws.com:8080/petclinic >/dev/null"
+    }
+}
