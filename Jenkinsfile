@@ -1,44 +1,74 @@
-node {
-    def mvnHome = tool name: 'Maven_3', type: 'maven'
-    def mvnCli = "${mvnHome}/bin/mvn"
+#!groovy
 
-    properties([
-        buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '5')),
-        disableConcurrentBuilds(),
-        [$class: 'GithubProjectProperty', displayName: '', projectUrlStr: 'https://github.com/gouthamchilakala/PetClinic.git/'],
-        [$class: 'ThrottleJobProperty', categories: [], limitOneJobWithMatchingParams: false, maxConcurrentPerNode: 0, maxConcurrentTotal: 0, paramsToUseForLimit: '', throttleEnabled: true, throttleOption: 'project'],
-        pipelineTriggers([githubPush()]),
-        parameters([string(defaultValue: 'DEV', description: 'env name', name: 'environment', trim: false)])
-    ])
-    stage('Checkout SCM'){
-        git branch: 'master', credentialsId: 'github-creds', url: 'https://github.com/gouthamchilakala/PetClinic'
+pipeline {
+    agent {
+        label 'worker-1'
     }
-    stage('Read praram'){
-        echo "The environment chosen during the Job execution is ${params.environment}"
-        echo "$JENKINS_URL"
+
+	tools {
+		    maven 'MAVEN3'
+			jdk 'JAVA8'
+	}
+    
+    options {
+        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
+        disableConcurrentBuilds()
     }
-    stage('maven compile'){
-        // def mvnHome = tool name: 'Maven_3.6', type: 'maven'
-        // def mvnCli = "${mvnHome}/bin/mvn"
-        sh "${mvnCli} clean compile"
+    
+    parameters {
+        choice choices: ['poc', 'dev', 'sit', 'uat'], description: 'environment name', name: 'environment'
+        choice choices: ['master'], description: 'Branch Name', name: 'BRANCH'
     }
-    stage('maven package'){
-        sh "${mvnCli} package -Dmaven.test.skip=true"
-    }
-    stage('Archive atifacts'){
-        archiveArtifacts artifacts: '**/*.war', onlyIfSuccessful: true
-    }
-    stage('Archive Test Results'){
-        junit allowEmptyResults: true, testResults: '**/surefire-reports/*.xml'
-    }
-    stage('Deploy To Tomcat'){
-        sshagent(['app-server']) {
-            sh 'scp -o StrictHostKeyChecking=no target/*.war ec2-user@ec2-52-70-39-48.compute-1.amazonaws.com:/opt/apache-tomcat-8.5.38/webapps/'
+    
+    stages {
+        stage('Checkout Code'){
+            steps {
+                deleteDir()
+                git branch: '$BRANCH', credentialsId: 'github-creds', url: 'https://github.com/gopishank/PetClinic.git'
+            }
         }
+		stage('Unit Tests'){
+		    steps {
+			    sh "mvn test"
+			}
+		}
+		stage('SonarQube Scan'){
+		    environment {
+		        SCANNER_HOME = tool 'SonarQubeScanner'
+		    }
+		    steps {
+		        withSonarQubeEnv(credentialsId: 'sonarqube-creds', installationName: 'SonarQube') {
+		            sh "$SCANNER_HOME/bin/sonar-scanner -Dproject.settings=sonar-project.properties"
+		        }
+		    }
+		}
+		stage('Maven Package'){
+		    steps {
+		        sh "mvn package"
+		    }
+		}
+		stage('Upload Artifacts'){
+		    steps {
+		        sh '''
+		        curl -u admin:admin POST "http://ec2-3-236-125-24.compute-1.amazonaws.com:8081/service/rest/v1/components?repository=petclinic" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "maven2.groupId=org.springframework.samples" -F "maven2.artifactId=petclinic" -F "maven2.version=${BUILD_ID}.0.0" -F "maven2.asset1=@${WORKSPACE}/target/petclinic.war" -F "maven2.asset1.extension=war"
+		        '''
+		    }
+		}
+		stage('Deploy Code'){
+		    steps {
+		        ansiblePlaybook installation: 'ANSIBLE29', playbook: '/home/ubuntu/playbooks/deploy.yaml'
+		    }
+		}
+		stage('Curl Test'){
+		    steps {
+		        sleep 5
+		        sh "curl http://ec2-54-162-51-156.compute-1.amazonaws.com:8080/petclinic"
+		    }
+		}
+		stage ('Send Notification'){
+		    steps {
+		        sh ""
+		    }
+		}
     }
-    stage('Smoke Test'){
-        sleep 5
-        sh "curl ec2-52-70-39-48.compute-1.amazonaws.com:8080/petclinic"
-    }
-
 }
