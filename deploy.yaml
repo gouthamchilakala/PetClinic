@@ -12,7 +12,7 @@
 
      - name: To copy war file
        copy:
-         src: /home/ubuntu/jenkins/workspace/Pipeline/target/petclinic.war
+         src: /home/ubuntu/jenkins/workspace/Pipeline_PetClinic/target/petclinic.war
          dest: /opt/apache-tomcat-8.5.57/webapps/
 
      - name: To START apache tomcat
