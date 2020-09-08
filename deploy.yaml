@@ -1,3 +1,6 @@
+# Create SonarQube - docker container run -d -p 9000:9000 --name sonarqube   sonarqube:lts //admin/admin
+# Create Nexus - docker container run -d -p 8081:8081 --name nexus sonatype/nexus3 //admin/
+
 ---
  - name: Deploy Tomcat Artifacts to Remote Servers
    hosts: appservers
