@@ -1,0 +1,76 @@
+pipeline {
+    
+    agent any
+    
+    tools {
+          maven 'MAVEN3'
+          jdk 'JAVA8'
+    }
+    
+    options {
+        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
+        disableConcurrentBuilds()
+        timestamps()
+    }
+    
+    parameters {
+        string defaultValue: '', description: 'Version of the java application', name: 'app_version', trim: false
+        choice choices: ['DEV', 'QA', 'INT', 'PRE_PROD'], description: 'Environment name for the code deployment', name: 'APP_ENV'
+    }
+    
+    stages {
+        stage('Code Checkout'){
+            steps {
+                echo "code checkout"
+                git 'https://github.com/gopishank/PetClinic.git'
+            }
+        }
+        
+        stage('Code Build'){
+            steps {
+                sh "mvn test-compile"
+            }
+        }
+        
+        stage('Code Analysis & Unit Tests'){
+            failFast true
+            parallel {
+                stage('Unit test') {
+                    steps {
+                        sh "mvn test"
+                    }
+                }
+                stage('SonarQube Scan'){
+                    environment {
+                        SCANNER_HOME = tool 'sonar-scanner'
+                    }
+                    steps {
+                        withSonarQubeEnv (installationName: 'sonarqube') {
+                            sh "${SCANNER_HOME}/bin/sonar-scanner -Dproject.settings=sonar-project.properties"
+                        }
+                    }
+                }
+            }
+        }
+        stage('Code Package'){
+            steps {
+                sh "mvn package"
+            }
+        }
+        stage('Image Build & Upload'){
+            steps {
+                sh '''
+                POM_VERSION=`grep "<version>" pom.xml | head -1 | awk -F "-" '{print $1}' | tail -c 6`
+                sudo docker image build -t petclinic:${POM_VERSION} .
+                sudo docker image tag petclinic:${POM_VERSION} gopishankar1/petclinic:${POM_VERSION}
+                sudo docker image push gopishankar1/petclinic:${POM_VERSION}
+                '''
+            }
+        }
+        stage('Code Deployment'){
+            steps {
+                echo "deployment"
+            }
+        }
+    }
+}
