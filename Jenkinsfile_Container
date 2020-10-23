@@ -67,9 +67,13 @@ pipeline {
                 '''
             }
         }
-        stage('Code Deployment'){
+        stage('Kubernetes Deployment'){
             steps {
-                echo "deployment"
+                echo "Install kubectl command on your Jenkins Server"
+                echo "Bring the file /etc/kubernetes/admin.conf from your kubernetes Master server and place anywhere in Jenkins"
+                sh '''
+                kubectl apply -f /home/ubuntu/kubernetes/petclinic/deployment.yaml --kubeconfig=/home/ubuntu/kubernetes/config/kubeconfig
+                '''
             }
         }
     }
