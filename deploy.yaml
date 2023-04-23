@@ -1,0 +1,22 @@
+# Create SonarQube - docker container run -d -p 9000:9000 --name sonarqube   sonarqube:lts //admin/admin
+# Create Nexus - docker container run -d -p 8081:8081 --name nexus sonatype/nexus3 //admin/
+
+---
+ - name: Deploy Tomcat Artifacts to Remote Servers
+   hosts: appservers
+
+   tasks:
+     - name: To stop apache tomcat
+       shell: ps -ef | grep tomcat | grep -v "grep" | awk '{print $2}'| xargs kill -9
+       ignore_errors: yes
+
+     - name: To Remove old war files
+       shell: rm -rf /opt/apache-tomcat-8.5.57/webapps/petclinic*
+
+     - name: To copy war file
+       copy:
+         src: /home/ubuntu/jenkins/workspace/Pipeline_PetClinic/target/petclinic.war
+         dest: /opt/apache-tomcat-8.5.57/webapps/
+
+     - name: To START apache tomcat
+       shell: nohup /opt/apache-tomcat-8.5.57/bin/catalina.sh start

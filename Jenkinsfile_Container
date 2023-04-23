@@ -1,8 +1,6 @@
 pipeline {
     
-    agent {
-        label 'worker-node-1'
-    }
+    agent any
     
     tools {
           maven 'MAVEN3'
@@ -24,7 +22,7 @@ pipeline {
         stage('Code Checkout'){
             steps {
                 echo "code checkout"
-                git credentialsId: 'github-creds', url: 'https://github.com/gopishank/PetClinic.git'
+                git 'https://github.com/gopishank/PetClinic.git'
             }
         }
         
@@ -44,7 +42,7 @@ pipeline {
                 }
                 stage('SonarQube Scan'){
                     environment {
-                        SCANNER_HOME = tool 'sonarscanner'
+                        SCANNER_HOME = tool 'sonar-scanner'
                     }
                     steps {
                         withSonarQubeEnv (installationName: 'sonarqube') {
@@ -59,17 +57,23 @@ pipeline {
                 sh "mvn package"
             }
         }
-        stage('Nexus Upload'){
+        stage('Image Build & Upload'){
             steps {
                 sh '''
                 POM_VERSION=`grep "<version>" pom.xml | head -1 | awk -F "-" '{print $1}' | tail -c 6`
-                curl -u admin:admin POST "http://ec2-18-207-239-251.compute-1.amazonaws.com:8081/service/rest/v1/components?repository=PetClinic" -H "accept: application/json" -H "Content-Type: multipart/form-data" -F "maven2.groupId=org.SampleOrg" -F "maven2.artifactId=petclinic" -F "maven2.version=${POM_VERSION}" -F "maven2.asset1=@${WORKSPACE}/target/petclinic.war" -F "maven2.asset1.extension=war"
+                sudo docker image build -t petclinic:${POM_VERSION} .
+                sudo docker image tag petclinic:${POM_VERSION} gopishankar1/petclinic:${POM_VERSION}
+                sudo docker image push gopishankar1/petclinic:${POM_VERSION}
                 '''
             }
         }
-        stage('Code Deployment'){
+        stage('Kubernetes Deployment'){
             steps {
-                ansiblePlaybook installation: 'ANSIBLE29', playbook: '/home/ubuntu/playbooks/deploy.yaml'
+                echo "Install kubectl command on your Jenkins Server"
+                echo "Bring the file /etc/kubernetes/admin.conf from your kubernetes Master server and place anywhere in Jenkins"
+                sh '''
+                kubectl apply -f /home/ubuntu/kubernetes/petclinic/deployment.yaml --kubeconfig=/home/ubuntu/kubernetes/config/kubeconfig
+                '''
             }
         }
     }
