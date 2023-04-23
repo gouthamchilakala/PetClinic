@@ -3,7 +3,7 @@
 ## Understanding the Spring Petclinic application with a few diagrams
 <a href="https://speakerdeck.com/michaelisvy/spring-petclinic-sample-application">See the presentation here</a>
 
-## Running petclinic locally
+## Running petclinic locally.
 ```
 	git clone https://github.com/spring-projects/spring-petclinic.git
 	cd spring-petclinic
@@ -18,7 +18,7 @@ Our issue tracker is available here: https://github.com/spring-projects/spring-p
 
 ## Database configuration
 
-In its default configuration, Petclinic uses an in-memory database (HSQLDB) which
+In its default configuration, PetClinic uses an in-memory database (HSQLDB) which
 gets populated at startup with data. A similar setup is provided for MySql in case a persistent database configuration is needed.
 Note that whenever the database type is changed, the data-access.properties file needs to be updated and the mysql-connector-java artifact from the pom.xml needs to be uncommented.
 
@@ -198,7 +198,7 @@ Here is a list of them:
       </td>
   </tr>  
   <tr>
-    <td>Eclipse: validation bug when working with .tag/.tagx files (has only been fixed for Eclipse 4.3 (Kepler)). <a href="https://github.com/spring-projects/spring-petclinic/issues/14">See here for more details.</a></td>
+    <td>eclipse: validation bug when working with .tag/.tagx files (has only been fixed for Eclipse 4.3 (Kepler)). <a href="https://github.com/spring-projects/spring-petclinic/issues/14">See here for more details.</a></td>
     <td>
       <a href="https://issuetracker.springsource.com/browse/STS-3294"> STS-3294</a>
     </td>
@@ -206,7 +206,7 @@ Here is a list of them:
 </table>
 
 
-# Contributing
+# Contributing...
 
 The [issue tracker](https://github.com/spring-projects/spring-petclinic/issues) is the preferred channel for bug reports, features requests and submitting pull requests.
 

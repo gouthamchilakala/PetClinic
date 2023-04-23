@@ -71,6 +71,9 @@ pipeline {
             steps {
                 ansiblePlaybook installation: 'ANSIBLE29', playbook: '/home/ubuntu/playbooks/deploy.yaml'
             }
+        stage('Smoke Test'){
+           sleep 30
+           sh "curl -sSf http://ec2-54-172-228-44.compute-1.amazonaws.com:8080/petclinic"
+        }
         }
     }
-}
